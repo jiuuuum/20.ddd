@@ -1,17 +1,31 @@
+import { notFound } from "next/navigation";
 import BookmarkGrid from "@/components/BookmarkGrid";
-import { bookmarks } from "@/data/bookmarks";
+import { getBookmarksByFolder, getFolder } from "@/data/bookmarks";
 
-export default function Home() {
+type FolderPageProps = {
+  params: Promise<{ folderId: string }>;
+};
+
+export default async function FolderPage({ params }: FolderPageProps) {
+  const { folderId } = await params;
+  const folder = getFolder(folderId);
+
+  if (!folder) {
+    notFound();
+  }
+
+  const folderBookmarks = getBookmarksByFolder(folderId);
+
   return (
     <main className="flex-1 bg-zinc-50 px-6 py-16 sm:px-8 dark:bg-black">
       <div className="mx-auto w-full max-w-5xl">
         <header className="mb-10 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
-              전체 북마크
+              {folder.name}
             </h1>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              저장한 링크 {bookmarks.length}개
+              저장한 링크 {folderBookmarks.length}개
             </p>
           </div>
           <button
@@ -22,7 +36,7 @@ export default function Home() {
           </button>
         </header>
 
-        <BookmarkGrid bookmarks={bookmarks} />
+        <BookmarkGrid bookmarks={folderBookmarks} />
       </div>
     </main>
   );
