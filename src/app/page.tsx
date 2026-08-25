@@ -3,21 +3,18 @@ import { bookmarks } from "@/data/bookmarks";
 
 export default function Home() {
   return (
-    <main className="flex-1 bg-zinc-50 px-6 py-16 sm:px-8 dark:bg-black">
+    <main className="flex-1 bg-[var(--background)] px-6 py-14 sm:px-8">
       <div className="mx-auto w-full max-w-5xl">
-        <header className="mb-10 flex items-center justify-between">
+        <header className="mb-12 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+            <h1 className="text-[28px] font-semibold tracking-[-0.3px] text-[var(--text)]">
               전체 북마크
             </h1>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-sm text-[var(--text-sub)]">
               저장한 링크 {bookmarks.length}개
             </p>
           </div>
-          <button
-            type="button"
-            className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-          >
+          <button type="button" className="btn-primary">
             + 북마크 추가
           </button>
         </header>
