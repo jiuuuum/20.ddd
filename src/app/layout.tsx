@@ -5,6 +5,7 @@ import AddFolderModal from "@/components/AddFolderModal";
 import DeleteFolderModal from "@/components/DeleteFolderModal";
 import DeleteBookmarkModal from "@/components/DeleteBookmarkModal";
 import EditFolderModal from "@/components/EditFolderModal";
+import EditBookmarkModal from "@/components/EditBookmarkModal";
 import { BookmarkProvider } from "@/context/BookmarkContext";
 import "./globals.css";
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <DeleteFolderModal />
           <DeleteBookmarkModal />
           <EditFolderModal />
+          <EditBookmarkModal />
         </BookmarkProvider>
       </body>
     </html>

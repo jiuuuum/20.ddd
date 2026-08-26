@@ -52,6 +52,10 @@ type BookmarkContextValue = {
   requestDeleteBookmark: (bookmark: Bookmark) => void;
   cancelDeleteBookmark: () => void;
   confirmDeleteBookmark: () => void;
+  bookmarkPendingEdit: Bookmark | null;
+  requestEditBookmark: (bookmark: Bookmark) => void;
+  closeEditBookmarkModal: () => void;
+  editBookmark: (fields: { title: string; description: string }) => void;
 };
 
 const BookmarkContext = createContext<BookmarkContextValue | null>(null);
@@ -76,6 +80,8 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     null
   );
   const [bookmarkPendingDeletion, setBookmarkPendingDeletion] =
+    useState<Bookmark | null>(null);
+  const [bookmarkPendingEdit, setBookmarkPendingEdit] =
     useState<Bookmark | null>(null);
 
   function openAddModal(folderId?: string) {
@@ -165,6 +171,25 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setBookmarkPendingDeletion(null);
   }
 
+  function requestEditBookmark(bookmark: Bookmark) {
+    setBookmarkPendingEdit(bookmark);
+  }
+
+  function closeEditBookmarkModal() {
+    setBookmarkPendingEdit(null);
+  }
+
+  function editBookmark(fields: { title: string; description: string }) {
+    if (!bookmarkPendingEdit) return;
+    const bookmarkId = bookmarkPendingEdit.id;
+    setBookmarks(
+      bookmarks.map((bookmark) =>
+        bookmark.id === bookmarkId ? { ...bookmark, ...fields } : bookmark
+      )
+    );
+    setBookmarkPendingEdit(null);
+  }
+
   return (
     <BookmarkContext.Provider
       value={{
@@ -191,6 +216,10 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
         requestDeleteBookmark,
         cancelDeleteBookmark,
         confirmDeleteBookmark,
+        bookmarkPendingEdit,
+        requestEditBookmark,
+        closeEditBookmarkModal,
+        editBookmark,
       }}
     >
       {children}
