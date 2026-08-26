@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useBookmarks } from "@/context/BookmarkContext";
+import type { OpenGraphData } from "@/lib/openGraph";
 
 export default function AddBookmarkModal() {
   const { isModalOpen } = useBookmarks();
@@ -13,24 +14,39 @@ export default function AddBookmarkModal() {
   return <AddBookmarkForm />;
 }
 
+function fallbackTitle(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
+async function fetchOpenGraph(url: string): Promise<OpenGraphData> {
+  const response = await fetch(`/api/og?url=${encodeURIComponent(url)}`);
+  if (!response.ok) {
+    return { title: null, description: null, thumbnail: null };
+  }
+  return response.json();
+}
+
 function AddBookmarkForm() {
   const { closeAddModal, addBookmark, folders, defaultFolderId } =
     useBookmarks();
 
-  const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
-  const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [folderId, setFolderId] = useState(
     defaultFolderId ?? folders[0]?.id ?? ""
   );
   const [error, setError] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
-    if (!title.trim() || !url.trim()) {
-      setError("제목과 URL은 필수입니다.");
+    if (!url.trim()) {
+      setError("URL을 입력해주세요.");
       return;
     }
 
@@ -39,11 +55,23 @@ function AddBookmarkForm() {
       normalizedUrl = `https://${normalizedUrl}`;
     }
 
+    setError("");
+    setIsFetching(true);
+
+    const og = await fetchOpenGraph(normalizedUrl).catch(() => ({
+      title: null,
+      description: null,
+      thumbnail: null,
+    }));
+
+    setIsFetching(false);
+
     addBookmark({
       folderId,
-      title: title.trim(),
+      title: og.title ?? fallbackTitle(normalizedUrl),
       url: normalizedUrl,
-      description: description.trim(),
+      description: og.description ?? "",
+      thumbnail: og.thumbnail ?? undefined,
       tags: tags
         .split(",")
         .map((tag) => tag.trim())
@@ -60,39 +88,22 @@ function AddBookmarkForm() {
         className="card w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-5 text-lg font-semibold text-[var(--text)]">
+        <h2 className="mb-1 text-lg font-semibold text-[var(--text)]">
           북마크 추가
         </h2>
+        <p className="mb-5 text-xs text-[var(--text-sub)]">
+          URL만 입력하면 제목·설명·썸네일을 자동으로 가져와요.
+        </p>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-1.5 text-sm text-[var(--text-sub)]">
-            제목
-            <input
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="예: Next.js Documentation"
-              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
-            />
-          </label>
-
           <label className="flex flex-col gap-1.5 text-sm text-[var(--text-sub)]">
             URL
             <input
+              autoFocus
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
-              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1.5 text-sm text-[var(--text-sub)]">
-            설명
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="간단한 설명"
-              className="resize-none rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
+              disabled={isFetching}
+              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
             />
           </label>
 
@@ -101,7 +112,8 @@ function AddBookmarkForm() {
             <select
               value={folderId}
               onChange={(e) => setFolderId(e.target.value)}
-              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
+              disabled={isFetching}
+              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
             >
               {folders.map((folder) => (
                 <option key={folder.id} value={folder.id}>
@@ -117,7 +129,8 @@ function AddBookmarkForm() {
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="Docs, Tool"
-              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
+              disabled={isFetching}
+              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
             />
           </label>
 
@@ -127,12 +140,17 @@ function AddBookmarkForm() {
             <button
               type="button"
               onClick={closeAddModal}
-              className="rounded-full px-5 py-2.5 text-sm font-medium text-[var(--text-sub)] hover:bg-black/[0.04]"
+              disabled={isFetching}
+              className="rounded-full px-5 py-2.5 text-sm font-medium text-[var(--text-sub)] hover:bg-black/[0.04] disabled:opacity-60"
             >
               취소
             </button>
-            <button type="submit" className="btn-primary text-sm">
-              추가
+            <button
+              type="submit"
+              disabled={isFetching}
+              className="btn-primary text-sm"
+            >
+              {isFetching ? "가져오는 중..." : "추가"}
             </button>
           </div>
         </form>

@@ -9,6 +9,7 @@ export type Bookmark = {
   title: string;
   url: string;
   description: string;
+  thumbnail?: string;
   tags: string[];
   createdAt: string;
 };
