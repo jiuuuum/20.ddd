@@ -68,6 +68,19 @@ button {
   background: rgba(0, 0, 0, 0.08);
 }
 
+.btn-danger {
+  background: var(--error);
+  color: #ffffff;
+  border-radius: 980px;
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.btn-danger:hover {
+  opacity: 0.85;
+}
+
 .card {
   background: var(--surface);
   border-radius: 12px;

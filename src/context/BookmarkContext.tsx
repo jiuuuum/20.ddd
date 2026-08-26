@@ -38,6 +38,10 @@ type BookmarkContextValue = {
   openAddFolderModal: () => void;
   closeAddFolderModal: () => void;
   addFolder: (name: string) => void;
+  folderPendingDeletion: Folder | null;
+  requestDeleteFolder: (folder: Folder) => void;
+  cancelDeleteFolder: () => void;
+  confirmDeleteFolder: () => void;
 };
 
 const BookmarkContext = createContext<BookmarkContextValue | null>(null);
@@ -54,6 +58,8 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [defaultFolderId, setDefaultFolderId] = useState<string | null>(null);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [folderPendingDeletion, setFolderPendingDeletion] =
+    useState<Folder | null>(null);
 
   function openAddModal(folderId?: string) {
     setDefaultFolderId(folderId ?? null);
@@ -88,6 +94,22 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setIsFolderModalOpen(false);
   }
 
+  function requestDeleteFolder(folder: Folder) {
+    setFolderPendingDeletion(folder);
+  }
+
+  function cancelDeleteFolder() {
+    setFolderPendingDeletion(null);
+  }
+
+  function confirmDeleteFolder() {
+    if (!folderPendingDeletion) return;
+    const folderId = folderPendingDeletion.id;
+    setFolders(folders.filter((folder) => folder.id !== folderId));
+    setBookmarks(bookmarks.filter((bookmark) => bookmark.folderId !== folderId));
+    setFolderPendingDeletion(null);
+  }
+
   return (
     <BookmarkContext.Provider
       value={{
@@ -102,6 +124,10 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
         openAddFolderModal,
         closeAddFolderModal,
         addFolder,
+        folderPendingDeletion,
+        requestDeleteFolder,
+        cancelDeleteFolder,
+        confirmDeleteFolder,
       }}
     >
       {children}

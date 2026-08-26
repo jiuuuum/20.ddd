@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import AddBookmarkModal from "@/components/AddBookmarkModal";
 import AddFolderModal from "@/components/AddFolderModal";
+import DeleteFolderModal from "@/components/DeleteFolderModal";
 import { BookmarkProvider } from "@/context/BookmarkContext";
 import "./globals.css";
 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="flex flex-1 flex-col">{children}</div>
           <AddBookmarkModal />
           <AddFolderModal />
+          <DeleteFolderModal />
         </BookmarkProvider>
       </body>
     </html>

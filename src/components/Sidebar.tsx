@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import DeleteFolderButton from "@/components/DeleteFolderButton";
 import { useBookmarks } from "@/context/BookmarkContext";
 
 export default function Sidebar() {
@@ -20,15 +21,16 @@ export default function Sidebar() {
           </Link>
         </li>
         {folders.map((folder) => (
-          <li key={folder.id}>
+          <li key={folder.id} className="group relative">
             <Link
               href={`/${folder.id}`}
-              className={`nav-link${
+              className={`nav-link pr-9${
                 pathname === `/${folder.id}` ? " is-active" : ""
               }`}
             >
               {folder.name}
             </Link>
+            <DeleteFolderButton folder={folder} />
           </li>
         ))}
       </ul>
