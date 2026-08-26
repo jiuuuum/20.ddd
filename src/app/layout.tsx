@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
+import AddBookmarkModal from "@/components/AddBookmarkModal";
+import AddFolderModal from "@/components/AddFolderModal";
+import { BookmarkProvider } from "@/context/BookmarkContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,8 +14,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full">
-        <Sidebar />
-        <div className="flex flex-1 flex-col">{children}</div>
+        <BookmarkProvider>
+          <Sidebar />
+          <div className="flex flex-1 flex-col">{children}</div>
+          <AddBookmarkModal />
+          <AddFolderModal />
+        </BookmarkProvider>
       </body>
     </html>
   );

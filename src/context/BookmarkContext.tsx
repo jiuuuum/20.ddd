@@ -1,0 +1,118 @@
+"use client";
+
+import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  bookmarks as initialBookmarks,
+  folders as initialFolders,
+  type Bookmark,
+  type Folder,
+} from "@/data/bookmarks";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+
+const BOOKMARKS_STORAGE_KEY = "bookmarks:list";
+const FOLDERS_STORAGE_KEY = "bookmarks:folders";
+
+type NewBookmark = {
+  folderId: string;
+  title: string;
+  url: string;
+  description: string;
+  tags: string[];
+};
+
+function createId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}`;
+}
+
+type BookmarkContextValue = {
+  bookmarks: Bookmark[];
+  folders: Folder[];
+  isModalOpen: boolean;
+  defaultFolderId: string | null;
+  openAddModal: (folderId?: string) => void;
+  closeAddModal: () => void;
+  addBookmark: (bookmark: NewBookmark) => void;
+  isFolderModalOpen: boolean;
+  openAddFolderModal: () => void;
+  closeAddFolderModal: () => void;
+  addFolder: (name: string) => void;
+};
+
+const BookmarkContext = createContext<BookmarkContextValue | null>(null);
+
+export function BookmarkProvider({ children }: { children: ReactNode }) {
+  const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>(
+    BOOKMARKS_STORAGE_KEY,
+    initialBookmarks
+  );
+  const [folders, setFolders] = useLocalStorage<Folder[]>(
+    FOLDERS_STORAGE_KEY,
+    initialFolders
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [defaultFolderId, setDefaultFolderId] = useState<string | null>(null);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+
+  function openAddModal(folderId?: string) {
+    setDefaultFolderId(folderId ?? null);
+    setIsModalOpen(true);
+  }
+
+  function closeAddModal() {
+    setIsModalOpen(false);
+  }
+
+  function addBookmark(bookmark: NewBookmark) {
+    const newBookmark: Bookmark = {
+      id: createId(),
+      createdAt: new Date().toISOString().slice(0, 10),
+      ...bookmark,
+    };
+    setBookmarks([newBookmark, ...bookmarks]);
+    setIsModalOpen(false);
+  }
+
+  function openAddFolderModal() {
+    setIsFolderModalOpen(true);
+  }
+
+  function closeAddFolderModal() {
+    setIsFolderModalOpen(false);
+  }
+
+  function addFolder(name: string) {
+    const newFolder: Folder = { id: createId(), name };
+    setFolders([...folders, newFolder]);
+    setIsFolderModalOpen(false);
+  }
+
+  return (
+    <BookmarkContext.Provider
+      value={{
+        bookmarks,
+        folders,
+        isModalOpen,
+        defaultFolderId,
+        openAddModal,
+        closeAddModal,
+        addBookmark,
+        isFolderModalOpen,
+        openAddFolderModal,
+        closeAddFolderModal,
+        addFolder,
+      }}
+    >
+      {children}
+    </BookmarkContext.Provider>
+  );
+}
+
+export function useBookmarks() {
+  const context = useContext(BookmarkContext);
+  if (!context) {
+    throw new Error("useBookmarks must be used within a BookmarkProvider");
+  }
+  return context;
+}

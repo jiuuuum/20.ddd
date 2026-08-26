@@ -55,6 +55,19 @@ button {
   cursor: not-allowed;
 }
 
+.btn-secondary {
+  background: var(--badge-bg);
+  color: var(--text);
+  border-radius: 980px;
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
 .card {
   background: var(--surface);
   border-radius: 12px;

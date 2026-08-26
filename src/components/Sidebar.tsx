@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { folders } from "@/data/bookmarks";
+import { useBookmarks } from "@/context/BookmarkContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { folders } = useBookmarks();
 
   return (
     <nav className="w-56 shrink-0 border-r border-[var(--divider)] px-4 py-8">
