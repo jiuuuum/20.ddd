@@ -1,4 +1,5 @@
 import { faviconUrl } from "@/lib/favicon";
+import DeleteBookmarkButton from "@/components/DeleteBookmarkButton";
 import type { Bookmark } from "@/data/bookmarks";
 
 type BookmarkCardProps = {
@@ -11,8 +12,9 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
       href={bookmark.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="card flex h-full flex-col gap-3"
+      className="card group relative flex h-full flex-col gap-3"
     >
+      <DeleteBookmarkButton bookmark={bookmark} />
       {bookmark.thumbnail && (
         // eslint-disable-next-line @next/next/no-img-element
         <img

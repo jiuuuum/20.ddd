@@ -2,21 +2,43 @@
 
 import { useState, type FormEvent } from "react";
 import { useBookmarks } from "@/context/BookmarkContext";
+import type { Folder } from "@/data/bookmarks";
+
+const BASE_FOLDER_NAME = "새폴더";
+
+function getDefaultFolderName(folders: Folder[]) {
+  const pattern = new RegExp(`^${BASE_FOLDER_NAME}(?: \\((\\d+)\\))?$`);
+  let maxUsed = 0;
+  let baseTaken = false;
+
+  for (const folder of folders) {
+    const match = folder.name.match(pattern);
+    if (!match) continue;
+    if (match[1]) {
+      maxUsed = Math.max(maxUsed, Number(match[1]));
+    } else {
+      baseTaken = true;
+    }
+  }
+
+  if (!baseTaken && maxUsed === 0) return BASE_FOLDER_NAME;
+  return `${BASE_FOLDER_NAME} (${Math.max(maxUsed, 1) + 1})`;
+}
 
 export default function AddFolderModal() {
-  const { isFolderModalOpen } = useBookmarks();
+  const { isFolderModalOpen, folders } = useBookmarks();
 
   // Mounting a fresh form instance each time the modal opens keeps the
   // fields reset without needing an effect to sync them.
   if (!isFolderModalOpen) return null;
 
-  return <AddFolderForm />;
+  return <AddFolderForm defaultName={getDefaultFolderName(folders)} />;
 }
 
-function AddFolderForm() {
+function AddFolderForm({ defaultName }: { defaultName: string }) {
   const { closeAddFolderModal, addFolder } = useBookmarks();
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(defaultName);
   const [error, setError] = useState("");
 
   function handleSubmit(e: FormEvent) {
@@ -44,6 +66,7 @@ function AddFolderForm() {
             폴더 이름
             <input
               autoFocus
+              onFocus={(e) => e.target.select()}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="예: 업무"
