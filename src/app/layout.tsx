@@ -3,6 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import AddBookmarkModal from "@/components/AddBookmarkModal";
 import AddFolderModal from "@/components/AddFolderModal";
 import DeleteFolderModal from "@/components/DeleteFolderModal";
+import EditFolderModal from "@/components/EditFolderModal";
 import { BookmarkProvider } from "@/context/BookmarkContext";
 import "./globals.css";
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AddBookmarkModal />
           <AddFolderModal />
           <DeleteFolderModal />
+          <EditFolderModal />
         </BookmarkProvider>
       </body>
     </html>

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   bookmarks as initialBookmarks,
   folders as initialFolders,
@@ -42,11 +43,17 @@ type BookmarkContextValue = {
   requestDeleteFolder: (folder: Folder) => void;
   cancelDeleteFolder: () => void;
   confirmDeleteFolder: () => void;
+  folderPendingEdit: Folder | null;
+  requestEditFolder: (folder: Folder) => void;
+  closeEditFolderModal: () => void;
+  renameFolder: (name: string) => void;
 };
 
 const BookmarkContext = createContext<BookmarkContextValue | null>(null);
 
 export function BookmarkProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>(
     BOOKMARKS_STORAGE_KEY,
     initialBookmarks
@@ -60,6 +67,9 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [folderPendingDeletion, setFolderPendingDeletion] =
     useState<Folder | null>(null);
+  const [folderPendingEdit, setFolderPendingEdit] = useState<Folder | null>(
+    null
+  );
 
   function openAddModal(folderId?: string) {
     setDefaultFolderId(folderId ?? null);
@@ -108,6 +118,29 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setFolders(folders.filter((folder) => folder.id !== folderId));
     setBookmarks(bookmarks.filter((bookmark) => bookmark.folderId !== folderId));
     setFolderPendingDeletion(null);
+
+    if (pathname === `/${folderId}`) {
+      router.push("/");
+    }
+  }
+
+  function requestEditFolder(folder: Folder) {
+    setFolderPendingEdit(folder);
+  }
+
+  function closeEditFolderModal() {
+    setFolderPendingEdit(null);
+  }
+
+  function renameFolder(name: string) {
+    if (!folderPendingEdit) return;
+    const folderId = folderPendingEdit.id;
+    setFolders(
+      folders.map((folder) =>
+        folder.id === folderId ? { ...folder, name } : folder
+      )
+    );
+    setFolderPendingEdit(null);
   }
 
   return (
@@ -128,6 +161,10 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
         requestDeleteFolder,
         cancelDeleteFolder,
         confirmDeleteFolder,
+        folderPendingEdit,
+        requestEditFolder,
+        closeEditFolderModal,
+        renameFolder,
       }}
     >
       {children}
