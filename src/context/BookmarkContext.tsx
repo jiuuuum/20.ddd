@@ -1,17 +1,23 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   bookmarks as initialBookmarks,
-  folders as initialFolders,
   type Bookmark,
   type Folder,
 } from "@/data/bookmarks";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { createClient } from "@/utils/supabase/client";
 
 const BOOKMARKS_STORAGE_KEY = "bookmarks:list";
-const FOLDERS_STORAGE_KEY = "bookmarks:folders";
 
 type NewBookmark = {
   folderId: string;
@@ -40,6 +46,7 @@ type BookmarkContextValue = {
   openAddFolderModal: () => void;
   closeAddFolderModal: () => void;
   addFolder: (name: string) => void;
+  isAddingFolder: boolean;
   folderPendingDeletion: Folder | null;
   requestDeleteFolder: (folder: Folder) => void;
   cancelDeleteFolder: () => void;
@@ -67,13 +74,12 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     BOOKMARKS_STORAGE_KEY,
     initialBookmarks
   );
-  const [folders, setFolders] = useLocalStorage<Folder[]>(
-    FOLDERS_STORAGE_KEY,
-    initialFolders
-  );
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [defaultFolderId, setDefaultFolderId] = useState<string | null>(null);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [isAddingFolder, setIsAddingFolder] = useState(false);
+  const isAddingFolderRef = useRef(false);
   const [folderPendingDeletion, setFolderPendingDeletion] =
     useState<Folder | null>(null);
   const [folderPendingEdit, setFolderPendingEdit] = useState<Folder | null>(
@@ -83,6 +89,26 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     useState<Bookmark | null>(null);
   const [bookmarkPendingEdit, setBookmarkPendingEdit] =
     useState<Bookmark | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadFolders() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("folders")
+        .select("id, name")
+        .order("created_at", { ascending: true });
+
+      if (!active || error || !data) return;
+      setFolders(data.map((row) => ({ id: String(row.id), name: row.name })));
+    }
+
+    loadFolders();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function openAddModal(folderId?: string) {
     setDefaultFolderId(folderId ?? null);
@@ -111,10 +137,27 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setIsFolderModalOpen(false);
   }
 
-  function addFolder(name: string) {
-    const newFolder: Folder = { id: createId(), name };
-    setFolders([...folders, newFolder]);
-    setIsFolderModalOpen(false);
+  async function addFolder(name: string) {
+    if (isAddingFolderRef.current) return;
+    isAddingFolderRef.current = true;
+    setIsAddingFolder(true);
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("folders")
+        .insert({ name })
+        .select("id, name")
+        .single();
+
+      if (!error && data) {
+        setFolders((prev) => [...prev, { id: String(data.id), name: data.name }]);
+        setIsFolderModalOpen(false);
+      }
+    } finally {
+      isAddingFolderRef.current = false;
+      setIsAddingFolder(false);
+    }
   }
 
   function requestDeleteFolder(folder: Folder) {
@@ -204,6 +247,7 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
         openAddFolderModal,
         closeAddFolderModal,
         addFolder,
+        isAddingFolder,
         folderPendingDeletion,
         requestDeleteFolder,
         cancelDeleteFolder,

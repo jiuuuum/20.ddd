@@ -36,13 +36,15 @@ export default function AddFolderModal() {
 }
 
 function AddFolderForm({ defaultName }: { defaultName: string }) {
-  const { closeAddFolderModal, addFolder } = useBookmarks();
+  const { closeAddFolderModal, addFolder, isAddingFolder } = useBookmarks();
 
   const [name, setName] = useState(defaultName);
   const [error, setError] = useState("");
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
+    if (isAddingFolder) return;
 
     if (!name.trim()) {
       setError("폴더 이름을 입력해주세요.");
@@ -84,8 +86,12 @@ function AddFolderForm({ defaultName }: { defaultName: string }) {
             >
               취소
             </button>
-            <button type="submit" className="btn-primary text-sm">
-              저장
+            <button
+              type="submit"
+              className="btn-primary text-sm disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isAddingFolder}
+            >
+              {isAddingFolder ? "저장 중..." : "저장"}
             </button>
           </div>
         </form>
