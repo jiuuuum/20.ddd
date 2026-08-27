@@ -9,15 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  bookmarks as initialBookmarks,
-  type Bookmark,
-  type Folder,
-} from "@/data/bookmarks";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { type Bookmark, type Folder } from "@/data/bookmarks";
 import { createClient } from "@/utils/supabase/client";
-
-const BOOKMARKS_STORAGE_KEY = "bookmarks:list";
 
 type NewBookmark = {
   folderId: string;
@@ -28,10 +21,27 @@ type NewBookmark = {
   tags: string[];
 };
 
-function createId() {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}`;
+type LinkRow = {
+  id: number;
+  url: string;
+  title: string | null;
+  description: string | null;
+  thumbnail_url: string | null;
+  created_at: string;
+  folder_id: number | null;
+};
+
+function mapLinkRow(row: LinkRow): Bookmark {
+  return {
+    id: String(row.id),
+    folderId: row.folder_id != null ? String(row.folder_id) : "",
+    title: row.title ?? row.url,
+    url: row.url,
+    description: row.description ?? "",
+    thumbnail: row.thumbnail_url ?? undefined,
+    tags: [],
+    createdAt: row.created_at.slice(0, 10),
+  };
 }
 
 type BookmarkContextValue = {
@@ -42,6 +52,7 @@ type BookmarkContextValue = {
   openAddModal: (folderId?: string) => void;
   closeAddModal: () => void;
   addBookmark: (bookmark: NewBookmark) => void;
+  isAddingBookmark: boolean;
   isFolderModalOpen: boolean;
   openAddFolderModal: () => void;
   closeAddFolderModal: () => void;
@@ -70,13 +81,12 @@ const BookmarkContext = createContext<BookmarkContextValue | null>(null);
 export function BookmarkProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>(
-    BOOKMARKS_STORAGE_KEY,
-    initialBookmarks
-  );
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [defaultFolderId, setDefaultFolderId] = useState<string | null>(null);
+  const [isAddingBookmark, setIsAddingBookmark] = useState(false);
+  const isAddingBookmarkRef = useRef(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const isAddingFolderRef = useRef(false);
@@ -104,7 +114,19 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
       setFolders(data.map((row) => ({ id: String(row.id), name: row.name })));
     }
 
+    async function loadBookmarks() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("links")
+        .select("id, url, title, description, thumbnail_url, created_at, folder_id")
+        .order("created_at", { ascending: false });
+
+      if (!active || error || !data) return;
+      setBookmarks(data.map(mapLinkRow));
+    }
+
     loadFolders();
+    loadBookmarks();
     return () => {
       active = false;
     };
@@ -119,14 +141,33 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setIsModalOpen(false);
   }
 
-  function addBookmark(bookmark: NewBookmark) {
-    const newBookmark: Bookmark = {
-      id: createId(),
-      createdAt: new Date().toISOString().slice(0, 10),
-      ...bookmark,
-    };
-    setBookmarks([newBookmark, ...bookmarks]);
-    setIsModalOpen(false);
+  async function addBookmark(bookmark: NewBookmark) {
+    if (isAddingBookmarkRef.current) return;
+    isAddingBookmarkRef.current = true;
+    setIsAddingBookmark(true);
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("links")
+        .insert({
+          url: bookmark.url,
+          title: bookmark.title || null,
+          description: bookmark.description || null,
+          thumbnail_url: bookmark.thumbnail ?? null,
+          folder_id: bookmark.folderId ? Number(bookmark.folderId) : null,
+        })
+        .select("id, url, title, description, thumbnail_url, created_at, folder_id")
+        .single();
+
+      if (!error && data) {
+        setBookmarks((prev) => [mapLinkRow(data), ...prev]);
+        setIsModalOpen(false);
+      }
+    } finally {
+      isAddingBookmarkRef.current = false;
+      setIsAddingBookmark(false);
+    }
   }
 
   function openAddFolderModal() {
@@ -168,15 +209,24 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setFolderPendingDeletion(null);
   }
 
-  function confirmDeleteFolder() {
+  async function confirmDeleteFolder() {
     if (!folderPendingDeletion) return;
     const folderId = folderPendingDeletion.id;
-    setFolders(folders.filter((folder) => folder.id !== folderId));
-    setBookmarks(bookmarks.filter((bookmark) => bookmark.folderId !== folderId));
-    setFolderPendingDeletion(null);
 
-    if (pathname === `/${folderId}`) {
-      router.push("/");
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("folders")
+      .delete()
+      .eq("id", Number(folderId));
+
+    if (!error) {
+      setFolders(folders.filter((folder) => folder.id !== folderId));
+      setBookmarks(bookmarks.filter((bookmark) => bookmark.folderId !== folderId));
+      setFolderPendingDeletion(null);
+
+      if (pathname === `/${folderId}`) {
+        router.push("/");
+      }
     }
   }
 
@@ -188,15 +238,24 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setFolderPendingEdit(null);
   }
 
-  function renameFolder(name: string) {
+  async function renameFolder(name: string) {
     if (!folderPendingEdit) return;
     const folderId = folderPendingEdit.id;
-    setFolders(
-      folders.map((folder) =>
-        folder.id === folderId ? { ...folder, name } : folder
-      )
-    );
-    setFolderPendingEdit(null);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("folders")
+      .update({ name })
+      .eq("id", Number(folderId));
+
+    if (!error) {
+      setFolders(
+        folders.map((folder) =>
+          folder.id === folderId ? { ...folder, name } : folder
+        )
+      );
+      setFolderPendingEdit(null);
+    }
   }
 
   function requestDeleteBookmark(bookmark: Bookmark) {
@@ -243,6 +302,7 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
         openAddModal,
         closeAddModal,
         addBookmark,
+        isAddingBookmark,
         isFolderModalOpen,
         openAddFolderModal,
         closeAddFolderModal,

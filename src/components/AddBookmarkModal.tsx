@@ -31,8 +31,13 @@ async function fetchOpenGraph(url: string): Promise<OpenGraphData> {
 }
 
 function AddBookmarkForm() {
-  const { closeAddModal, addBookmark, folders, defaultFolderId } =
-    useBookmarks();
+  const {
+    closeAddModal,
+    addBookmark,
+    folders,
+    defaultFolderId,
+    isAddingBookmark,
+  } = useBookmarks();
 
   const [url, setUrl] = useState("");
   const [tags, setTags] = useState("");
@@ -44,6 +49,8 @@ function AddBookmarkForm() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
+    if (isFetching || isAddingBookmark) return;
 
     if (!url.trim()) {
       setError("URL을 입력해주세요.");
@@ -66,7 +73,7 @@ function AddBookmarkForm() {
 
     setIsFetching(false);
 
-    addBookmark({
+    await addBookmark({
       folderId,
       title: og.title ?? fallbackTitle(normalizedUrl),
       url: normalizedUrl,
@@ -78,6 +85,8 @@ function AddBookmarkForm() {
         .filter(Boolean),
     });
   }
+
+  const isBusy = isFetching || isAddingBookmark;
 
   return (
     <div
@@ -102,7 +111,7 @@ function AddBookmarkForm() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
-              disabled={isFetching}
+              disabled={isBusy}
               className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
             />
           </label>
@@ -112,7 +121,7 @@ function AddBookmarkForm() {
             <select
               value={folderId}
               onChange={(e) => setFolderId(e.target.value)}
-              disabled={isFetching}
+              disabled={isBusy}
               className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
             >
               {folders.map((folder) => (
@@ -129,7 +138,7 @@ function AddBookmarkForm() {
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="Docs, Tool"
-              disabled={isFetching}
+              disabled={isBusy}
               className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] disabled:opacity-60"
             />
           </label>
@@ -140,17 +149,21 @@ function AddBookmarkForm() {
             <button
               type="button"
               onClick={closeAddModal}
-              disabled={isFetching}
+              disabled={isBusy}
               className="rounded-full px-5 py-2.5 text-sm font-medium text-[var(--text-sub)] hover:bg-black/[0.04] disabled:opacity-60"
             >
               취소
             </button>
             <button
               type="submit"
-              disabled={isFetching}
+              disabled={isBusy}
               className="btn-primary text-sm"
             >
-              {isFetching ? "가져오는 중..." : "추가"}
+              {isFetching
+                ? "가져오는 중..."
+                : isAddingBookmark
+                  ? "추가 중..."
+                  : "추가"}
             </button>
           </div>
         </form>
