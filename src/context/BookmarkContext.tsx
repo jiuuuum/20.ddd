@@ -101,34 +101,54 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     useState<Bookmark | null>(null);
 
   useEffect(() => {
+    const supabase = createClient();
     let active = true;
+    let lastUserId: string | null = null;
 
-    async function loadFolders() {
-      const supabase = createClient();
+    async function loadFolders(userId: string) {
       const { data, error } = await supabase
         .from("folders")
         .select("id, name")
+        .eq("user_id", userId)
         .order("created_at", { ascending: true });
 
       if (!active || error || !data) return;
       setFolders(data.map((row) => ({ id: String(row.id), name: row.name })));
     }
 
-    async function loadBookmarks() {
-      const supabase = createClient();
+    async function loadBookmarks(userId: string) {
       const { data, error } = await supabase
         .from("links")
         .select("id, url, title, description, thumbnail_url, created_at, folder_id")
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (!active || error || !data) return;
       setBookmarks(data.map(mapLinkRow));
     }
 
-    loadFolders();
-    loadBookmarks();
+    function loadForUser(userId: string | null) {
+      if (userId === lastUserId) return;
+      lastUserId = userId;
+
+      if (!userId) {
+        setFolders([]);
+        setBookmarks([]);
+        return;
+      }
+      loadFolders(userId);
+      loadBookmarks(userId);
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      loadForUser(session?.user?.id ?? null);
+    });
+
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, []);
 
