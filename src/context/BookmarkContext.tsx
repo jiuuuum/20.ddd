@@ -266,11 +266,20 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setBookmarkPendingDeletion(null);
   }
 
-  function confirmDeleteBookmark() {
+  async function confirmDeleteBookmark() {
     if (!bookmarkPendingDeletion) return;
     const bookmarkId = bookmarkPendingDeletion.id;
-    setBookmarks(bookmarks.filter((bookmark) => bookmark.id !== bookmarkId));
-    setBookmarkPendingDeletion(null);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("links")
+      .delete()
+      .eq("id", Number(bookmarkId));
+
+    if (!error) {
+      setBookmarks(bookmarks.filter((bookmark) => bookmark.id !== bookmarkId));
+      setBookmarkPendingDeletion(null);
+    }
   }
 
   function requestEditBookmark(bookmark: Bookmark) {
@@ -281,15 +290,24 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     setBookmarkPendingEdit(null);
   }
 
-  function editBookmark(fields: { title: string; description: string }) {
+  async function editBookmark(fields: { title: string; description: string }) {
     if (!bookmarkPendingEdit) return;
     const bookmarkId = bookmarkPendingEdit.id;
-    setBookmarks(
-      bookmarks.map((bookmark) =>
-        bookmark.id === bookmarkId ? { ...bookmark, ...fields } : bookmark
-      )
-    );
-    setBookmarkPendingEdit(null);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("links")
+      .update({ title: fields.title, description: fields.description })
+      .eq("id", Number(bookmarkId));
+
+    if (!error) {
+      setBookmarks(
+        bookmarks.map((bookmark) =>
+          bookmark.id === bookmarkId ? { ...bookmark, ...fields } : bookmark
+        )
+      );
+      setBookmarkPendingEdit(null);
+    }
   }
 
   return (
