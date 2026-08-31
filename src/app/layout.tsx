@@ -1,12 +1,5 @@
 import type { Metadata } from "next";
-import Sidebar from "@/components/Sidebar";
-import AddBookmarkModal from "@/components/AddBookmarkModal";
-import AddFolderModal from "@/components/AddFolderModal";
-import DeleteFolderModal from "@/components/DeleteFolderModal";
-import DeleteBookmarkModal from "@/components/DeleteBookmarkModal";
-import EditFolderModal from "@/components/EditFolderModal";
-import EditBookmarkModal from "@/components/EditBookmarkModal";
-import { BookmarkProvider } from "@/context/BookmarkContext";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,18 +9,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="ko" className="h-full antialiased">
       <body className="flex min-h-full">
-        <BookmarkProvider>
-          <Sidebar />
-          <div className="flex flex-1 flex-col">{children}</div>
-          <AddBookmarkModal />
-          <AddFolderModal />
-          <DeleteFolderModal />
-          <DeleteBookmarkModal />
-          <EditFolderModal />
-          <EditBookmarkModal />
-        </BookmarkProvider>
+        {children}
+        <Toaster position="top-center" />
       </body>
     </html>
   );

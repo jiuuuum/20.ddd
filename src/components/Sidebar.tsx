@@ -1,18 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import DeleteFolderButton from "@/components/DeleteFolderButton";
 import EditFolderButton from "@/components/EditFolderButton";
 import { useBookmarks } from "@/context/BookmarkContext";
+import { createClient } from "@/utils/supabase/client";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { folders } = useBookmarks();
 
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
-    <nav className="w-56 shrink-0 border-r border-[var(--divider)] px-4 py-8">
-      <ul className="flex flex-col gap-1">
+    <nav className="flex h-full w-56 shrink-0 flex-col border-r border-[var(--divider)] px-4 py-8">
+      <ul className="flex flex-1 flex-col gap-1">
         <li>
           <Link
             href="/"
@@ -36,6 +45,9 @@ export default function Sidebar() {
           </li>
         ))}
       </ul>
+      <button type="button" onClick={handleLogout} className="nav-link text-left">
+        로그아웃
+      </button>
     </nav>
   );
 }

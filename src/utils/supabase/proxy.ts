@@ -4,6 +4,8 @@ import { type NextRequest, NextResponse } from "next/server";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"];
+
 export const updateSession = async (request: NextRequest) => {
   // Create an unmodified response
   let supabaseResponse = NextResponse.next({
@@ -34,7 +36,19 @@ export const updateSession = async (request: NextRequest) => {
   );
 
   // Refreshes the auth token if needed
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isPublicPath = PUBLIC_PATHS.some((path) =>
+    request.nextUrl.pathname.startsWith(path),
+  );
+
+  if (!user && !isPublicPath) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    return NextResponse.redirect(redirectUrl);
+  }
 
   return supabaseResponse
 };
