@@ -48,6 +48,9 @@ export default function Sidebar() {
       <button type="button" onClick={handleLogout} className="nav-link text-left">
         로그아웃
       </button>
+      <Link href="/privacy" className="nav-link text-left text-xs text-[var(--text-sub)]">
+        개인정보 처리방침
+      </Link>
     </nav>
   );
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Sidebar from "@/components/Sidebar";
 import AddBookmarkModal from "@/components/AddBookmarkModal";
@@ -7,6 +8,10 @@ import DeleteBookmarkModal from "@/components/DeleteBookmarkModal";
 import EditFolderModal from "@/components/EditFolderModal";
 import EditBookmarkModal from "@/components/EditBookmarkModal";
 import { BookmarkProvider } from "@/context/BookmarkContext";
+
+export const metadata: Metadata = {
+  title: "전체 북마크",
+};
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   return (
