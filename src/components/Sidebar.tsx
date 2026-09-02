@@ -80,6 +80,14 @@ export default function Sidebar() {
             </li>
           ))}
         </ul>
+        <a
+          href="https://77-5jcc.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="nav-link"
+        >
+          마임축제 사이트
+        </a>
         <button type="button" onClick={handleLogout} className="nav-link text-left">
           로그아웃
         </button>

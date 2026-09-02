@@ -99,6 +99,17 @@ export default function LoginPage() {
             회원가입
           </Link>
         </p>
+
+        <p className="mt-4 text-center text-sm text-[var(--text-sub)]">
+          <a
+            href="https://77-5jcc.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-[var(--text)] underline"
+          >
+            마임축제 사이트 바로가기
+          </a>
+        </p>
       </div>
     </div>
   );
