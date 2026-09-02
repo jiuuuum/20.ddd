@@ -12,7 +12,7 @@ export default function PageHeader({ title, count, folderId }: PageHeaderProps) 
   const { openAddModal, openAddFolderModal } = useBookmarks();
 
   return (
-    <header className="mb-12 flex items-center justify-between">
+    <header className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 className="text-[28px] font-semibold tracking-[-0.3px] text-[var(--text)]">
           {title}
